@@ -1,0 +1,27 @@
+# Configuration Railway pour le déploiement de l'application EBF
+
+[build]
+command = "chmod +x scripts/railway-setup.sh && ./scripts/railway-setup.sh && npm run build"
+
+[deploy]
+startCommand = "npm start"
+
+[env]
+NODE_ENV = "production"
+PORT = "3000"
+
+# Configuration de la base de données
+DATABASE_URL = "file:/app/data/custom.db"
+
+# Variables pour le système de fichiers
+UPLOADS_DIR = "/app/public/uploads"
+
+# Configuration pour Next.js
+NEXT_TELEMETRY_DISABLED = "1"
+
+# Health check
+[healthcheck]
+path = "/api/health"
+interval = "30s"
+timeout = "10s"
+retries = 3
