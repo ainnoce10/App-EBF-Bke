@@ -3,20 +3,37 @@ import { setupSocket } from '@/lib/socket';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import next from 'next';
+import path from 'path';
 
 const dev = process.env.NODE_ENV !== 'production';
-const currentPort = 3000;
-const hostname = '127.0.0.1';
+const currentPort = parseInt(process.env.PORT || '3000', 10);
+const hostname = process.env.HOSTNAME || '127.0.0.1';
+
+// Get the project directory - works in different environments
+const projectDir = process.cwd();
+
+console.log(`Starting server from directory: ${projectDir}`);
+console.log(`Environment: ${dev ? 'development' : 'production'}`);
+console.log(`Port: ${currentPort}`);
+console.log(`Hostname: ${hostname}`);
 
 // Custom server with Socket.IO integration
 async function createCustomServer() {
   try {
-    // Create Next.js app
+    // Create Next.js app with explicit configuration
     const nextApp = next({ 
       dev,
-      dir: process.cwd(),
+      dir: projectDir,
+      hostname: hostname,
+      port: currentPort,
       // In production, use the current directory where .next is located
-      conf: dev ? undefined : { distDir: './.next' }
+      conf: {
+        distDir: '.next',
+        output: 'standalone',
+        experimental: {
+          serverComponentsExternalPackages: []
+        }
+      }
     });
 
     await nextApp.prepare();
@@ -41,15 +58,12 @@ async function createCustomServer() {
     });
 
     setupSocket(io);
-    
-    // Exposer l'instance Socket.IO globalement pour les API routes
-    // @ts-ignore
-    global.io = io;
 
     // Start the server
     server.listen(currentPort, hostname, () => {
       console.log(`> Ready on http://${hostname}:${currentPort}`);
       console.log(`> Socket.IO server running at ws://${hostname}:${currentPort}/api/socketio`);
+      console.log(`> Project directory: ${projectDir}`);
     });
 
   } catch (err) {
