@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
         customerName: serviceRequest.customer.name,
         serviceType: serviceRequest.type === 'TEXT' ? 'Message texte' : 'Message audio',
         description: serviceRequest.description || 'Aucune description',
-        address: serviceRequest.customer.address || `${serviceRequest.customer.neighborhood || ''}, ${serviceRequest.customer.city}`,
+        address: `${serviceRequest.customer.neighborhood || ''}, ${serviceRequest.customer.city}`.trim(),
         phone: serviceRequest.customer.phone,
         createdAt: serviceRequest.createdAt,
         updatedAt: serviceRequest.updatedAt

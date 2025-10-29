@@ -8,13 +8,14 @@ export async function POST(request: NextRequest) {
     // Créer un nouveau message de test
     const message = await db.message.create({
       data: {
-        name: name || 'Client Test',
-        email: email || 'test@example.com',
+        senderName: name || 'Client Test',
+        senderPhone: '0000000000', // Téléphone par défaut pour le test
+        senderEmail: email || 'test@example.com',
         subject: subject || 'Message de test',
         content: content || 'Ceci est un message de test pour vérifier le système de notifications.',
         type,
         priority,
-        status: 'PENDING'
+        status: 'UNREAD'
       }
     })
 

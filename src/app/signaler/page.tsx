@@ -573,7 +573,7 @@ export default function SignalerPage() {
       
     } catch (error) {
       console.error('❌ Erreur réseau détaillée:', error);
-      console.error('Type d\'erreur:', error.constructor.name);
+      console.error('Type d\'erreur:', error instanceof Error ? error.constructor.name : 'Inconnu');
       console.error('Message d\'erreur:', error instanceof Error ? error.message : 'Erreur inconnue');
       
       // Vérifier si c'est une erreur réseau ou une erreur de l'API

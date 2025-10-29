@@ -19,6 +19,7 @@ interface Message {
   priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
   status: 'UNREAD' | 'READ' | 'ANSWERED' | 'ARCHIVED'
   createdAt: string
+  updatedAt: string
 }
 
 interface NotificationProps {

@@ -16,7 +16,7 @@ export function AdminNotificationIcon() {
   const router = useRouter()
 
   // Calculer le nombre de messages non lus
-  const unreadCount = messages.filter(msg => msg.status === 'PENDING' || msg.status === 'UNREAD').length
+  const unreadCount = messages.filter(msg => msg.status === 'IN_PROGRESS').length
 
   // Effet de clignotement pour les messages non lus
   useEffect(() => {

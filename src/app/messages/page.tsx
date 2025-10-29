@@ -4,6 +4,23 @@ import { useState, useEffect } from "react";
 import { Archive, CheckCircle, Trash2, AlertTriangle, Clock4, Mail, Check, PlayCircle, Star, Home, Calendar } from "lucide-react";
 import Link from "next/link";
 
+interface Message {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  subject: string;
+  content: string;
+  type: 'CONTACT' | 'REQUEST' | 'COMPLAINT' | 'INFO';
+  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+  status: 'UNREAD' | 'READ' | 'ANSWERED' | 'ARCHIVED' | 'IN_PROGRESS' | 'COMPLETED' | 'URGENT';
+  createdAt: string;
+  updatedAt: string;
+  code?: string;
+  expanded?: boolean;
+  appointmentDate?: string | null;
+}
+
 export default function MessagesPage() {
   // Clé pour le localStorage
   const STORAGE_KEY = "ebf-messages-data";
@@ -53,7 +70,7 @@ export default function MessagesPage() {
   const [notificationBlink, setNotificationBlink] = useState(false);
   const [showClientDialog, setShowClientDialog] = useState(false);
   const [clientCode, setClientCode] = useState("");
-  const [clientMessage, setClientMessage] = useState(null);
+  const [clientMessage, setClientMessage] = useState<Message | null>(null);
 
   const [stats, setStats] = useState({
     total: 0,
@@ -65,12 +82,12 @@ export default function MessagesPage() {
     urgents: 0,
   });
 
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState<Message[]>([]);
 
   // Effet de clignotement pour les notifications
   useEffect(() => {
     // Vérifier s'il y a de nouveaux messages non lus
-    const hasUnreadMessages = messages.some(msg => msg.statut === "NON_LU");
+    const hasUnreadMessages = messages.some(msg => msg.status === "UNREAD");
     
     if (hasUnreadMessages) {
       const interval = setInterval(() => {
@@ -138,20 +155,20 @@ export default function MessagesPage() {
     };
 
     messagesList.forEach(msg => {
-      switch (msg.statut) {
-        case "LUS":
+      switch (msg.status) {
+        case "READ":
           stats.lus += 1;
           break;
-        case "NON_LU":
+        case "UNREAD":
           stats.nonLus += 1;
           break;
-        case "ARCHIVE":
+        case "ARCHIVED":
           stats.archives += 1;
           break;
-        case "EN_COURS":
+        case "IN_PROGRESS":
           stats.enCours += 1;
           break;
-        case "EXECUTE":
+        case "COMPLETED":
           stats.executes += 1;
           break;
         case "URGENT":
@@ -165,15 +182,20 @@ export default function MessagesPage() {
 
   // Fonction pour ajouter une nouvelle demande client
   const addNewClientRequest = (clientData) => {
-    const newMessage = {
-      id: Date.now(), // ID unique basé sur le timestamp
-      titre: `Nouvelle demande - ${clientData.name}`,
-      client: clientData.name,
-      telephone: clientData.phone,
-      description: clientData.description,
-      statut: "NON_LU", // Nouveau message non lu
-      expanded: false,
+    const newMessage: Message = {
+      id: Date.now().toString(), // ID unique basé sur le timestamp
+      name: clientData.name,
+      email: clientData.email || '',
+      phone: clientData.phone,
+      subject: `Nouvelle demande - ${clientData.name}`,
+      content: clientData.description,
+      type: 'REQUEST',
+      priority: 'MEDIUM',
+      status: 'UNREAD', // Nouveau message non lu
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
       code: generateCode(), // Générer un code à 4 chiffres
+      expanded: false,
       appointmentDate: null,
     };
 
@@ -192,7 +214,7 @@ export default function MessagesPage() {
       setMessages(prev =>
         prev.map(msg =>
           msg.id === messageId 
-            ? { ...msg, appointmentDate: date, statut: "EN_COURS" }
+            ? { ...msg, appointmentDate: date, status: "IN_PROGRESS" }
             : msg
         )
       );
@@ -216,7 +238,7 @@ export default function MessagesPage() {
     if (confirm("Êtes-vous sûr de vouloir réinitialiser ce message à son état initial ?")) {
       setMessages((prev) =>
         prev.map((msg) =>
-          msg.id === id ? { ...msg, statut: "LUS", expanded: false } : msg
+          msg.id === id ? { ...msg, status: "READ", expanded: false } : msg
         )
       );
     }
@@ -225,7 +247,7 @@ export default function MessagesPage() {
   const updateMessageStatus = (id, newStatus) => {
     setMessages((prev) =>
       prev.map((msg) =>
-        msg.id === id ? { ...msg, statut: newStatus } : msg
+        msg.id === id ? { ...msg, status: newStatus } : msg
       )
     );
   };
@@ -246,12 +268,12 @@ export default function MessagesPage() {
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case "NON_LU": return <Mail className="w-4 h-4" />;
-      case "LUS": return <Check className="w-4 h-4" />;
-      case "EN_COURS": return <PlayCircle className="w-4 h-4" />;
-      case "EXECUTE": return <CheckCircle className="w-4 h-4" />;
+      case "UNREAD": return <Mail className="w-4 h-4" />;
+      case "READ": return <Check className="w-4 h-4" />;
+      case "IN_PROGRESS": return <PlayCircle className="w-4 h-4" />;
+      case "COMPLETED": return <CheckCircle className="w-4 h-4" />;
       case "URGENT": return <AlertTriangle className="w-4 h-4" />;
-      case "ARCHIVE": return <Archive className="w-4 h-4" />;
+      case "ARCHIVED": return <Archive className="w-4 h-4" />;
       default: return <Mail className="w-4 h-4" />;
     }
   };
@@ -334,22 +356,22 @@ export default function MessagesPage() {
               >
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
-                    <h3 className="font-semibold text-gray-800">{msg.titre}</h3>
+                    <h3 className="font-semibold text-gray-800">{msg.subject}</h3>
                     <p className="text-sm text-gray-500">
-                      {msg.client} – {msg.telephone}
+                      {msg.name} – {msg.phone}
                     </p>
-                    <p className="mt-2 text-gray-600 text-sm line-clamp-2">{msg.description}</p>
+                    <p className="mt-2 text-gray-600 text-sm line-clamp-2">{msg.content}</p>
                   </div>
 
                 {/* 🟦 Boutons d'action - Tous les statuts */}
                 <div className="flex gap-2 ml-4 flex-wrap" onClick={(e) => e.stopPropagation()}>
                   {/* Non lu */}
                   <button
-                    onClick={() => updateMessageStatus(msg.id, "NON_LU")}
+                    onClick={() => updateMessageStatus(msg.id, "UNREAD")}
                     title="Marquer comme non lu"
-                    disabled={isStatusActive(msg.statut, "NON_LU")}
+                    disabled={isStatusActive(msg.status, "UNREAD")}
                     className={`p-2 rounded-lg transition-all ${
-                      isStatusActive(msg.statut, "NON_LU")
+                      isStatusActive(msg.status, "UNREAD")
                         ? "bg-red-100 text-red-400 cursor-not-allowed opacity-50"
                         : "text-gray-600 hover:bg-red-100 hover:text-red-500"
                     }`}
@@ -359,11 +381,11 @@ export default function MessagesPage() {
 
                   {/* Lu */}
                   <button
-                    onClick={() => updateMessageStatus(msg.id, "LUS")}
+                    onClick={() => updateMessageStatus(msg.id, "READ")}
                     title="Marquer comme lu"
-                    disabled={isStatusActive(msg.statut, "LUS")}
+                    disabled={isStatusActive(msg.status, "READ")}
                     className={`p-2 rounded-lg transition-all ${
-                      isStatusActive(msg.statut, "LUS")
+                      isStatusActive(msg.status, "READ")
                         ? "bg-blue-100 text-blue-400 cursor-not-allowed opacity-50"
                         : "text-gray-600 hover:bg-blue-100 hover:text-blue-500"
                     }`}
@@ -373,11 +395,11 @@ export default function MessagesPage() {
 
                   {/* En cours */}
                   <button
-                    onClick={() => updateMessageStatus(msg.id, "EN_COURS")}
+                    onClick={() => updateMessageStatus(msg.id, "IN_PROGRESS")}
                     title="Marquer comme en cours"
-                    disabled={isStatusActive(msg.statut, "EN_COURS")}
+                    disabled={isStatusActive(msg.status, "IN_PROGRESS")}
                     className={`p-2 rounded-lg transition-all ${
-                      isStatusActive(msg.statut, "EN_COURS")
+                      isStatusActive(msg.status, "IN_PROGRESS")
                         ? "bg-yellow-100 text-yellow-400 cursor-not-allowed opacity-50"
                         : "text-gray-600 hover:bg-yellow-100 hover:text-yellow-500"
                     }`}
@@ -387,11 +409,11 @@ export default function MessagesPage() {
 
                   {/* Exécuté */}
                   <button
-                    onClick={() => updateMessageStatus(msg.id, "EXECUTE")}
+                    onClick={() => updateMessageStatus(msg.id, "COMPLETED")}
                     title="Marquer comme exécuté"
-                    disabled={isStatusActive(msg.statut, "EXECUTE")}
+                    disabled={isStatusActive(msg.status, "COMPLETED")}
                     className={`p-2 rounded-lg transition-all ${
-                      isStatusActive(msg.statut, "EXECUTE")
+                      isStatusActive(msg.status, "COMPLETED")
                         ? "bg-green-100 text-green-400 cursor-not-allowed opacity-50"
                         : "text-gray-600 hover:bg-green-100 hover:text-green-500"
                     }`}
@@ -403,9 +425,9 @@ export default function MessagesPage() {
                   <button
                     onClick={() => updateMessageStatus(msg.id, "URGENT")}
                     title="Marquer comme urgent"
-                    disabled={isStatusActive(msg.statut, "URGENT")}
+                    disabled={isStatusActive(msg.status, "URGENT")}
                     className={`p-2 rounded-lg transition-all ${
-                      isStatusActive(msg.statut, "URGENT")
+                      isStatusActive(msg.status, "URGENT")
                         ? "bg-red-100 text-red-400 cursor-not-allowed opacity-50"
                         : "text-gray-600 hover:bg-red-100 hover:text-red-500"
                     }`}
@@ -415,11 +437,11 @@ export default function MessagesPage() {
 
                   {/* Archiver */}
                   <button
-                    onClick={() => updateMessageStatus(msg.id, "ARCHIVE")}
+                    onClick={() => updateMessageStatus(msg.id, "ARCHIVED")}
                     title="Archiver"
-                    disabled={isStatusActive(msg.statut, "ARCHIVE")}
+                    disabled={isStatusActive(msg.status, "ARCHIVED")}
                     className={`p-2 rounded-lg transition-all ${
-                      isStatusActive(msg.statut, "ARCHIVE")
+                      isStatusActive(msg.status, "ARCHIVED")
                         ? "bg-gray-100 text-gray-400 cursor-not-allowed opacity-50"
                         : "text-gray-600 hover:bg-gray-100 hover:text-gray-500"
                     }`}
@@ -469,9 +491,9 @@ export default function MessagesPage() {
                   <div className="flex items-center justify-between">
                     <h4 className="font-semibold text-gray-800">Détails du message</h4>
                     <div className="flex items-center gap-2">
-                      {getStatusIcon(msg.statut)}
+                      {getStatusIcon(msg.status)}
                       <span className="text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded-full">
-                        {msg.statut.replace('_', ' ')}
+                        {msg.status.replace('_', ' ')}
                       </span>
                     </div>
                   </div>
@@ -479,11 +501,11 @@ export default function MessagesPage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <p className="text-sm text-gray-600 font-medium">Client</p>
-                      <p className="text-gray-800">{msg.client}</p>
+                      <p className="text-gray-800">{msg.name}</p>
                     </div>
                     <div>
                       <p className="text-sm text-gray-600 font-medium">Téléphone</p>
-                      <p className="text-gray-800">{msg.telephone}</p>
+                      <p className="text-gray-800">{msg.phone}</p>
                     </div>
                   </div>
 
@@ -506,7 +528,7 @@ export default function MessagesPage() {
                   
                   <div>
                     <p className="text-sm text-gray-600 font-medium">Description complète</p>
-                    <p className="text-gray-800 mt-1 leading-relaxed">{msg.description}</p>
+                    <p className="text-gray-800 mt-1 leading-relaxed">{msg.content}</p>
                   </div>
                   
                   <div className="flex items-center justify-between pt-2 border-t border-gray-200">
@@ -573,15 +595,15 @@ export default function MessagesPage() {
                   <div className="space-y-2">
                     <div>
                       <span className="text-sm text-green-600">Client :</span>
-                      <span className="ml-2 text-green-800">{clientMessage.client}</span>
+                      <span className="ml-2 text-green-800">{clientMessage.name}</span>
                     </div>
                     <div>
                       <span className="text-sm text-green-600">Téléphone :</span>
-                      <span className="ml-2 text-green-800">{clientMessage.telephone}</span>
+                      <span className="ml-2 text-green-800">{clientMessage.phone}</span>
                     </div>
                     <div>
                       <span className="text-sm text-green-600">Demande :</span>
-                      <span className="ml-2 text-green-800">{clientMessage.description}</span>
+                      <span className="ml-2 text-green-800">{clientMessage.content}</span>
                     </div>
                     <div>
                       <span className="text-sm text-green-600">Rendez-vous :</span>

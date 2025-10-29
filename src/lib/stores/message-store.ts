@@ -54,7 +54,7 @@ export const useMessageStore = create<MessageStore>((set, get) => ({
       // Mettre à jour le message dans le store
       set((state) => ({
         messages: state.messages.map((msg) =>
-          msg.id === id ? { ...msg, status, updatedAt: new Date().toISOString() } : msg
+          msg.id === id ? { ...msg, status: status as any, updatedAt: new Date().toISOString() } : msg
         )
       }))
     } catch (error) {

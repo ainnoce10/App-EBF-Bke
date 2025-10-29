@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Si un trackingCode est fourni, récupérer les informations de la demande
-    let serviceType = null;
+    let serviceType: string | null = null;
     if (trackingCode) {
       try {
         const request = await db.request.findFirst({

@@ -283,7 +283,7 @@ export class MessageService {
     try {
       const message = await db.message.update({
         where: { id: messageId },
-        data: { status },
+        data: { status: status as any },
       });
 
       console.log(`✅ Message ${messageId} mis à jour avec le statut: ${status}`);
@@ -302,7 +302,7 @@ export class MessageService {
     try {
       await db.message.updateMany({
         where: { id: { in: messageIds } },
-        data: { status },
+        data: { status: status as any },
       });
 
       console.log(`✅ ${messageIds.length} messages mis à jour avec le statut: ${status}`);
